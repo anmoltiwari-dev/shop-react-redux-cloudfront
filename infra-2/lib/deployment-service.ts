@@ -55,5 +55,11 @@ export class DeploymentService extends Construct {
       description: "The name of the S3 bucket",
       exportName: "BucketName",
     });
+
+    new CfnOutput(this, "S3 BucketURL", {
+      value: hostingBucket.bucketWebsiteUrl,
+      description: "The URL of the S3 bucket",
+      exportName: "BucketURL",
+    });
   }
 }
