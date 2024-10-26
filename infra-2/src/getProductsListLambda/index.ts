@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import products from './products.json'; // Import mock data
+import { products } from '../mockData/products';
 
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+async function handler (
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
   return {
     statusCode: 200,
     body: JSON.stringify(products),
@@ -12,3 +12,5 @@ export const handler = async (
     },
   };
 };
+
+exports.handler;
