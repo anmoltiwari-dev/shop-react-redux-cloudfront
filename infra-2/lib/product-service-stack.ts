@@ -12,14 +12,14 @@ export class ProductServiceStack extends Stack {
     // Define the Lambda function
     const getProductsListLambda = new lambda.Function(this, 'getProductsListLambda', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../src/getProductsListLambda')),
+      handler: 'getProductsListLambda.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, './')),
     });
 
     const getProductsByIdLambda = new lambda.Function(this, 'getProductsByIdLambda', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../src/getProductsByIdLambda')),
+      handler: 'getProductsByIdLambda.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, './')),
     });
 
     // Define the API Gateway REST API

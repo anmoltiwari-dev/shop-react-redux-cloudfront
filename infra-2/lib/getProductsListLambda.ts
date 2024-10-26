@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { products } from '../mockData/products';
+import { products } from './mockData/products';
 
 async function handler (
     event: APIGatewayProxyEvent

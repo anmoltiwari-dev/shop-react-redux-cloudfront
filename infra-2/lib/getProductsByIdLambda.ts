@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { products } from "../mockData/products";
+import { products } from "./mockData/products";
 
-async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+async function handler (
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
   const productId = event?.pathParameters?.productId;
   const product = products.find((p) => p.id === productId);
 
@@ -18,6 +18,6 @@ async function handler(
       body: JSON.stringify({ message: "Product not found" }),
     };
   }
-}
+};
 
 exports.handler;
