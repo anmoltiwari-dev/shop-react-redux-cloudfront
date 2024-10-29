@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { DeploymentService } from './deployment-service';
+import { ProductServiceStack } from './product-service-stack';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class DeployWebAppStack extends cdk.Stack {
@@ -14,5 +15,6 @@ export class DeployWebAppStack extends cdk.Stack {
     //   visibilityTimeout: cdk.Duration.seconds(300)
     // });
     new DeploymentService(this, "deployment");
+    //new ProductServiceStack(this, "deployment");
   }
 }
