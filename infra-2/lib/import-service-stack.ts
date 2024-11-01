@@ -57,11 +57,16 @@ export class ImportServiceStack extends Stack {
       restApiName: 'Import Service',
     });
 
-    // /import GET endpoint
+    const basicAuthorizer = lambda.Function.fromFunctionArn(this, 'BasicAuthorizer', 'arn:aws:lambda:...');
+
+    const authorizer = new apigateway.TokenAuthorizer(this, 'TokenAuthorizer', {
+      handler: basicAuthorizer,
+    });
+
     const importResource = api.root.addResource('import');
-    importResource.addMethod(
-      'GET',
-      new apigateway.LambdaIntegration(importProductsFileLambda),
-    );
+    importResource.addMethod('GET', new apigateway.LambdaIntegration(importProductsFileLambda), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
   }
 }
