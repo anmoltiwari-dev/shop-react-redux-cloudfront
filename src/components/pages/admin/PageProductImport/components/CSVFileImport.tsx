@@ -22,26 +22,21 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
     setFile(undefined);
   };
 
-  const uploadFile = async () => {
-    console.log("uploadFile to", url);
+  async function getSignedUrl(fileName: string) {
+    const response = await fetch(`/import?name=${fileName}`, { method: "GET" });
+    const data = await response.json();
+    return data.url;
+  }
 
-    // Get the presigned URL
-    // const response = await axios({
-    //   method: "GET",
-    //   url,
-    //   params: {
-    //     name: encodeURIComponent(file.name),
-    //   },
-    // });
-    // console.log("File to upload: ", file.name);
-    // console.log("Uploading to: ", response.data);
-    // const result = await fetch(response.data, {
-    //   method: "PUT",
-    //   body: file,
-    // });
-    // console.log("Result: ", result);
-    // setFile("");
-  };
+  async function uploadFile(file: File) {
+    const signedUrl = await getSignedUrl(file.name);
+    await fetch(signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "text/csv" },
+      body: file,
+    });
+  }
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -52,7 +47,7 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
       ) : (
         <div>
           <button onClick={removeFile}>Remove file</button>
-          <button onClick={uploadFile}>Upload file</button>
+          <button onClick={() => uploadFile(file)}>Upload file</button>
         </div>
       )}
     </Box>
