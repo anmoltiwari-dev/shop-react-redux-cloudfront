@@ -5,6 +5,10 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from 'constructs';
 import * as path from 'path';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as sns from 'aws-cdk-lib/aws-sns';
 
 const ProductsTableName = 'Products';
 const StockTableName = 'Stock';
@@ -53,6 +57,28 @@ export class ProductServiceStack extends Stack {
       }
     });
 
+    // SQS Queue creation
+    const catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
+      queueName: 'catalog-items-queue',
+    });
+
+    // Lambda for batch processing
+    const catalogBatchProcess = new lambda.Function(this, 'CatalogBatchProcess', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset(path.join(__dirname, './catalogBatchProcess')), // compiled code here
+      handler: 'catalogBatchProcess.handler',
+      environment: {
+        PRODUCTS_TABLE: 'ProductsTable', // reference to your products DynamoDB table
+      },
+    });
+
+    // Set SQS as the event source for catalogBatchProcess Lambda
+    catalogBatchProcess.addEventSource(
+      new lambdaEventSources.SqsEventSource(catalogItemsQueue, {
+        batchSize: 5,
+      }),
+    );
+
     productsTable.grantReadWriteData(createProductLambda);
     stockTable.grantReadWriteData(createProductLambda);
 
@@ -61,6 +87,19 @@ export class ProductServiceStack extends Stack {
 
     productsTable.grantReadData(getProductsByIdLambda);
     stockTable.grantReadData(getProductsByIdLambda);
+
+    productsTable.grantWriteData(catalogBatchProcess);
+
+    // SNS Topic creation
+    const createProductTopic = new sns.Topic(this, 'CreateProductTopic', {
+      topicName: 'create-product-topic',
+    });
+
+    // Email Subscription
+    createProductTopic.addSubscription(new subs.EmailSubscription('your-email@example.com'));
+
+    // Grant SNS publish permissions to catalogBatchProcess Lambda
+    createProductTopic.grantPublish(catalogBatchProcess);
 
     // Define the API Gateway REST API
     const api = new apigateway.RestApi(this, 'ProductServiceAPI', {
