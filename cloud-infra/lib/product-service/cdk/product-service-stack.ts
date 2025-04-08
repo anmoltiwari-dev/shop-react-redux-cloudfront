@@ -3,9 +3,15 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
 import * as path from "path";
+import { Table } from "aws-cdk-lib/aws-dynamodb";
+
+interface ProductServiceStackProps extends StackProps {
+  productsTable: Table;
+  stockTable: Table;
+}
 
 export class ProductServiceStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: ProductServiceStackProps) {
     super(scope, id, props);
 
     const getProductsByIdLambda = new lambda.Function(
@@ -14,9 +20,14 @@ export class ProductServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "getProductById.handler",
-        code: lambda.Code.fromAsset(path.join("dist")),
+        code: lambda.Code.fromAsset("dist"),
       }
     );
+
+    getProductsByIdLambda.addEnvironment("PRODUCTS_TABLE", props?.productsTable.tableName as string)
+    getProductsByIdLambda.addEnvironment("STOCK_TABLE", props?.stockTable.tableName as string);
+    props?.productsTable.grantReadData(getProductsByIdLambda);
+    props?.stockTable.grantReadData(getProductsByIdLambda);
 
     const getProductsListLambda = new lambda.Function(
       this,
@@ -24,9 +35,25 @@ export class ProductServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "getProductsList.handler",
-        code: lambda.Code.fromAsset(path.join("dist")),
+        code: lambda.Code.fromAsset("dist"),
       }
     );
+
+    getProductsListLambda.addEnvironment("PRODUCTS_TABLE", props?.productsTable.tableName as string)
+    getProductsListLambda.addEnvironment("STOCK_TABLE", props?.stockTable.tableName as string);
+    props?.productsTable.grantReadData(getProductsListLambda);
+    props?.stockTable.grantReadData(getProductsListLambda);
+
+    const createProductLambda = new lambda.Function(this, 'CreateProductLambda', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'createProduct.handler',
+      code: lambda.Code.fromAsset('dist'),
+    });
+
+    createProductLambda.addEnvironment("PRODUCTS_TABLE", props?.productsTable.tableName as string)
+    createProductLambda.addEnvironment("STOCK_TABLE", props?.stockTable.tableName as string);
+    props?.productsTable.grantReadData(createProductLambda);
+    props?.stockTable.grantReadData(createProductLambda);
 
     const api = new apiGateway.RestApi(this, "ProductServiceAPI", {
       restApiName: "Product Service",
@@ -45,9 +72,15 @@ export class ProductServiceStack extends Stack {
       {}
     );
 
+    products.addMethod(
+      "POST",
+      new apiGateway.LambdaIntegration(createProductLambda),
+      {}
+    );
+
     products.addCorsPreflight({
       allowOrigins: ["*"], // or use your localhost URL: http://localhost:5173
-      allowMethods: ["GET"],
+      allowMethods: ["GET", "POST"],
     });
 
     const singleProduct = products.addResource("{productId}");
