@@ -52,8 +52,8 @@ export class ProductServiceStack extends Stack {
 
     createProductLambda.addEnvironment("PRODUCTS_TABLE", props?.productsTable.tableName as string)
     createProductLambda.addEnvironment("STOCK_TABLE", props?.stockTable.tableName as string);
-    props?.productsTable.grantReadData(createProductLambda);
-    props?.stockTable.grantReadData(createProductLambda);
+    props?.productsTable.grantWriteData(createProductLambda);
+    props?.stockTable.grantWriteData(createProductLambda);
 
     const api = new apiGateway.RestApi(this, "ProductServiceAPI", {
       restApiName: "Product Service",
