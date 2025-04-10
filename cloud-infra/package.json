@@ -1,0 +1,35 @@
+{
+  "name": "cloud-infra",
+  "version": "0.1.0",
+  "bin": {
+    "cloud-infra": "bin/cloud-infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "build:lambda": "node esbuild.config.js",
+    "deploy": "npm run build:lambda && cdk deploy",
+    "seed": "ts-node lib/scripts/seed-db.ts",
+    "deploy:lambda": "npm run build:lambda && cdk deploy ProductServiceStack"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1006.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.782.0",
+    "@aws-sdk/util-dynamodb": "^3.782.0",
+    "@types/aws-lambda": "^8.10.148",
+    "@types/uuid": "^10.0.0",
+    "aws-cdk-lib": "2.185.0",
+    "aws-lambda": "^1.0.7",
+    "constructs": "^10.0.0",
+    "uuid": "^11.1.0"
+  }
+}
