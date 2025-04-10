@@ -9,7 +9,7 @@ export function useAvailableProducts() {
     "available-products",
     async () => {
       const res = await axios.get<AvailableProduct[]>(
-        `${API_PATHS.aws}/products`
+        `${API_PATHS.product}/products`
       );
       return res.data;
     }
