@@ -20,7 +20,7 @@ export class ProductServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "getProductById.handler",
-        code: lambda.Code.fromAsset("dist"),
+        code: lambda.Code.fromAsset("dist/product-service/lambda"),
       }
     );
 
@@ -35,7 +35,7 @@ export class ProductServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "getProductsList.handler",
-        code: lambda.Code.fromAsset("dist"),
+        code: lambda.Code.fromAsset("dist/product-service/lambda"),
       }
     );
 
@@ -47,7 +47,7 @@ export class ProductServiceStack extends Stack {
     const createProductLambda = new lambda.Function(this, 'CreateProductLambda', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'createProduct.handler',
-      code: lambda.Code.fromAsset('dist'),
+      code: lambda.Code.fromAsset('dist/product-service/lambda'),
     });
 
     createProductLambda.addEnvironment("PRODUCTS_TABLE", props?.productsTable.tableName as string)

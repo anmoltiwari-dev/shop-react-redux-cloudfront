@@ -28,7 +28,7 @@ export class ImportServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "importProductsFile.handler",
-        code: lambda.Code.fromAsset("dist"),
+        code: lambda.Code.fromAsset("dist/import-service/lambda"),
         environment: {
           BUCKET_NAME: this.importBucket.bucketName as string,
         },
@@ -43,7 +43,7 @@ export class ImportServiceStack extends Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "importFileParser.handler",
-        code: lambda.Code.fromAsset("dist"),
+        code: lambda.Code.fromAsset("dist/import-service/lambda"),
         environment: {
           BUCKET_NAME: this.importBucket.bucketName as string,
         },
