@@ -19,12 +19,28 @@ export class ImportServiceStack extends Stack {
     this.importBucket = new s3.Bucket(this, "uploaded", {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      cors: [
+        {
+          allowedOrigins: ['*'], // or specify your frontend URL e.g. ['http://localhost:3000']
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.HEAD,
+          ],
+          allowedHeaders: ['*'],
+        },
+      ],
     });
 
     new BucketDeployment(this, "DeployUploadBucket", {
       destinationBucket: this.importBucket,
       sources: [Source.data("uploaded/.keep", "")],
     });
+
+    /********************************************************/
+    /** importProductsFileLambda */
+    /********************************************************/
 
     const importProductsFileLambda = new lambda.Function(
       this,
@@ -40,6 +56,10 @@ export class ImportServiceStack extends Stack {
     );
 
     this.importBucket.grantPut(importProductsFileLambda);
+
+    /********************************************************/
+    /** importFileParser */
+    /********************************************************/
 
     const importFileParserLambda = new lambda.Function(
       this,
@@ -75,5 +95,9 @@ export class ImportServiceStack extends Stack {
       "GET",
       new apiGateway.LambdaIntegration(importProductsFileLambda)
     );
+    importResource.addCorsPreflight({
+      allowOrigins: ["*"], // or use your localhost URL: http://localhost:5173
+      allowMethods: ["GET", "POST"],
+    });
   }
 }
