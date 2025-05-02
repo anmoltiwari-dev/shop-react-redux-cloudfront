@@ -10,8 +10,10 @@ const app = new cdk.App();
 
 const productDBStack = new ProductDBStack(app, 'ProductDBStack', {});
 const stockDBStack = new StockDBStack(app, 'StockDBStack', {});
-new ProductServiceStack(app, 'ProductServiceStack', {
+const productServiceStack = new ProductServiceStack(app, 'ProductServiceStack', {
   productsTable: productDBStack.productsTable,
   stockTable: stockDBStack.stockTable,
 });
-new ImportServiceStack(app, 'ImportServiceStack', {});
+new ImportServiceStack(app, 'ImportServiceStack', {
+  catalogItemsQueue: productServiceStack.catalogItemsQueue,
+});

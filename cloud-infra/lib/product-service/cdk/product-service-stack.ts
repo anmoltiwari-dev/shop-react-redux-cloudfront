@@ -1,9 +1,12 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
-import * as path from "path";
 import { Table } from "aws-cdk-lib/aws-dynamodb";
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
 interface ProductServiceStackProps extends StackProps {
   productsTable: Table;
@@ -11,8 +14,13 @@ interface ProductServiceStackProps extends StackProps {
 }
 
 export class ProductServiceStack extends Stack {
+  public readonly catalogItemsQueue: sqs.Queue;
   constructor(scope: Construct, id: string, props?: ProductServiceStackProps) {
     super(scope, id, props);
+
+    /********************************************************/
+    /** getProductsByIdLambda */
+    /********************************************************/
 
     const getProductsByIdLambda = new lambda.Function(
       this,
@@ -29,6 +37,10 @@ export class ProductServiceStack extends Stack {
     props?.productsTable.grantReadData(getProductsByIdLambda);
     props?.stockTable.grantReadData(getProductsByIdLambda);
 
+    /********************************************************/
+    /** getProductsListLambda */
+    /********************************************************/
+
     const getProductsListLambda = new lambda.Function(
       this,
       "getProductsListLambda",
@@ -44,6 +56,10 @@ export class ProductServiceStack extends Stack {
     props?.productsTable.grantReadData(getProductsListLambda);
     props?.stockTable.grantReadData(getProductsListLambda);
 
+    /********************************************************/
+    /** CreateProductLambda */
+    /********************************************************/
+
     const createProductLambda = new lambda.Function(this, 'CreateProductLambda', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'createProduct.handler',
@@ -54,6 +70,43 @@ export class ProductServiceStack extends Stack {
     createProductLambda.addEnvironment("STOCK_TABLE", props?.stockTable.tableName as string);
     props?.productsTable.grantWriteData(createProductLambda);
     props?.stockTable.grantWriteData(createProductLambda);
+
+    /********************************************************/
+    /** CatalogBatchProcess */
+    /********************************************************/
+    
+    /** SQS Queue: CatalogItemsQueue */
+    this.catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
+      visibilityTimeout: Duration.seconds(30),
+    });
+
+    /** SNS Topic: CreateProductTopic */
+    const createProductTopic = new sns.Topic(this, 'CreateProductTopic', {
+      displayName: 'Product Creation Topic',
+    });
+
+    createProductTopic.addSubscription(
+      new EmailSubscription('anmoltiwari0225@gmail.com')
+    );
+
+    const catalogBatchProcess = new lambda.Function(this, 'CatalogBatchProcess', {
+      runtime:  lambda.Runtime.NODEJS_20_X,
+      handler: 'catalogBatchProcess.handler',
+      code: lambda.Code.fromAsset('dist/product-service/lambda'),
+      environment: {
+        PRODUCTS_TABLE: props?.productsTable.tableName as string,
+        CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
+      }
+    });
+
+    catalogBatchProcess.addEventSource(
+      new SqsEventSource(this.catalogItemsQueue, {
+        batchSize: 5,
+      })
+    );
+
+    props?.productsTable.grantWriteData(catalogBatchProcess);
+    createProductTopic.grantPublish(catalogBatchProcess);
 
     const api = new apiGateway.RestApi(this, "ProductServiceAPI", {
       restApiName: "Product Service",

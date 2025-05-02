@@ -6,10 +6,14 @@ import * as apiGateway from "aws-cdk-lib/aws-apigateway";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 
+interface ImportServiceStackProps extends StackProps {
+  catalogItemsQueue: sqs.Queue;
+}
 export class ImportServiceStack extends Stack {
   public readonly importBucket: s3.Bucket;
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: ImportServiceStackProps) {
     super(scope, id, props);
 
     this.importBucket = new s3.Bucket(this, "uploaded", {
@@ -46,6 +50,7 @@ export class ImportServiceStack extends Stack {
         code: lambda.Code.fromAsset("dist/import-service/lambda"),
         environment: {
           BUCKET_NAME: this.importBucket.bucketName as string,
+          CATALOG_ITEMS_QUEUE_URL: props?.catalogItemsQueue.queueUrl as string,
         },
       }
     );
