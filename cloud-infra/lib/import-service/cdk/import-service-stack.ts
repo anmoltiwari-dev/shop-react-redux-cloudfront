@@ -6,7 +6,7 @@ import * as apiGateway from "aws-cdk-lib/aws-apigateway";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sqs from "aws-cdk-lib/aws-sqs";
 
 interface ImportServiceStackProps extends StackProps {
   catalogItemsQueue: sqs.Queue;
@@ -21,14 +21,14 @@ export class ImportServiceStack extends Stack {
       autoDeleteObjects: true,
       cors: [
         {
-          allowedOrigins: ['*'], // or specify your frontend URL e.g. ['http://localhost:3000']
+          allowedOrigins: ["*"], // or specify your frontend URL e.g. ['http://localhost:3000']
           allowedMethods: [
             s3.HttpMethods.GET,
             s3.HttpMethods.POST,
             s3.HttpMethods.PUT,
             s3.HttpMethods.HEAD,
           ],
-          allowedHeaders: ['*'],
+          allowedHeaders: ["*"],
         },
       ],
     });
@@ -56,6 +56,20 @@ export class ImportServiceStack extends Stack {
     );
 
     this.importBucket.grantPut(importProductsFileLambda);
+
+    /********************************************************/
+    /** basicAuthorizerFunction */
+    /********************************************************/
+
+    const basicAuthorizerFunction = new lambda.Function(
+      this,
+      "basicAuthorizerFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: "basicAuthorizer.handler",
+        code: lambda.Code.fromAsset("dist/authorization-service/lambda"),
+      }
+    );
 
     /********************************************************/
     /** importFileParser */
@@ -90,10 +104,15 @@ export class ImportServiceStack extends Stack {
 
     const api = new apiGateway.RestApi(this, "ImportServiceAPI", {});
 
+    const authorizer = new apiGateway.TokenAuthorizer(this, "TokenAuthorizer", {
+      handler: basicAuthorizerFunction,
+    });
+
     const importResource = api.root.addResource("import");
     importResource.addMethod(
       "GET",
-      new apiGateway.LambdaIntegration(importProductsFileLambda)
+      new apiGateway.LambdaIntegration(importProductsFileLambda),
+      { authorizer, authorizationType: apiGateway.AuthorizationType.CUSTOM }
     );
     importResource.addCorsPreflight({
       allowOrigins: ["*"], // or use your localhost URL: http://localhost:5173
